@@ -5,7 +5,7 @@ import java.io.ByteArrayOutputStream
 import java.io.PrintStream
 import java.util.*
 
-fun serveResource(exchange: HttpExchange, path: String) {
+fun serveResource(exchange: HttpExchange, path: String, responseCode: Int) {
     val bufferSize = 2_000
     val buffer = ByteArray(bufferSize)
 
@@ -16,7 +16,7 @@ fun serveResource(exchange: HttpExchange, path: String) {
         return
     }
 
-    exchange.sendResponseHeaders(200, 0)
+    exchange.sendResponseHeaders(responseCode, 0)
     while (true) {
         val numReadBytes = inputStream.read(buffer)
         if (numReadBytes == -1) break
@@ -27,7 +27,7 @@ fun serveResource(exchange: HttpExchange, path: String) {
     exchange.responseBody.flush()
 }
 
-fun serveResource(exchange: HttpExchange, path: String, substitutor: (String) -> String) {
+fun serveResource(exchange: HttpExchange, path: String, responseCode: Int, substitutor: (String) -> String) {
     val rawInput = GetUploadFormHandler::class.java.classLoader.getResourceAsStream(path)
 
     if (rawInput == null) {
@@ -48,7 +48,7 @@ fun serveResource(exchange: HttpExchange, path: String, substitutor: (String) ->
     outputWriter.flush()
 
     val outputBytes = outputBuffer.toByteArray()
-    exchange.sendResponseHeaders(200, outputBytes.size.toLong())
+    exchange.sendResponseHeaders(responseCode, outputBytes.size.toLong())
     exchange.responseBody.write(outputBytes)
     exchange.responseBody.flush()
 }

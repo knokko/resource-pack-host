@@ -34,11 +34,14 @@ fun extractFileContent(contentPlusHeaders: ByteArray): ByteArray {
 
 fun validateResourcePackContent(content: ByteArray): String? {
     val zipInput = ZipInputStream(ByteArrayInputStream(content))
+    var hasPackMcmeta = false
     while (true) {
         try {
             val currentEntry = zipInput.nextEntry ?: break
 
-            println("Current path is ${currentEntry.name}")
+            if (currentEntry.name == "pack.mcmeta") {
+                hasPackMcmeta = true
+            }
         } catch (invalidZip: ZipException) {
             return "This is not a valid ZIP file."
         } catch (invalidZip: IOException) {
@@ -46,5 +49,6 @@ fun validateResourcePackContent(content: ByteArray): String? {
         }
     }
 
-    return null
+    return if (hasPackMcmeta) null
+    else "This resource pack doesn't have a pack.mcmeta file in the root directory"
 }

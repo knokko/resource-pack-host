@@ -5,6 +5,7 @@ import java.io.IOException
 import java.lang.System.currentTimeMillis
 import java.nio.file.Files
 import java.security.MessageDigest
+import java.util.concurrent.ConcurrentHashMap
 
 /*
  * To prevent old resource packs from consuming my disk space, I
@@ -25,7 +26,7 @@ private const val CACHE_TIME = 1000L * 60L * 60L
 
 class ResourcePackCache(private val folder: File) {
 
-    private val expirationTimes = mutableMapOf<String, Long>()
+    private val expirationTimes = ConcurrentHashMap<String, Long>()
 
     init {
         /*
@@ -60,6 +61,19 @@ class ResourcePackCache(private val folder: File) {
         }
     }
 
+    fun printExpirationTimes() {
+        val currentTime = currentTimeMillis()
+        for ((hexString, expirationTime) in expirationTimes) {
+            val timeLeft = expirationTime - currentTime
+            if (timeLeft < 0) {
+                println("$hexString will be removed during the next cache update")
+            } else {
+                val secondsLeft = timeLeft / 1000
+                println("$hexString has ${secondsLeft / 60} minutes and ${secondsLeft % 60} seconds left")
+            }
+        }
+    }
+
     fun putInCache(fileContent: ByteArray): String {
         val sha256 = MessageDigest.getInstance("SHA-256")
         sha256.update(fileContent)
@@ -80,7 +94,9 @@ class ResourcePackCache(private val folder: File) {
         return if (this.expirationTimes.containsKey(hexHash)) {
             val file = File(folder.path + "/" + hexHash + ".zip")
             try {
-                Files.readAllBytes(file.toPath())
+                val fileContent = Files.readAllBytes(file.toPath())
+                this.expirationTimes[hexHash] = currentTimeMillis() + CACHE_TIME
+                fileContent
             } catch (ioTrouble: IOException) {
                 this.expirationTimes.remove(hexHash)
                 file.delete()

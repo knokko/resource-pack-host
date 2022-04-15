@@ -13,19 +13,19 @@ class GetResourcePackHandler(
         if (exchange != null) {
 
             val hexHash = exchange.requestURI.path.substring(GET_RESOURCE_PACK_PREFIX.length)
-
-            println("Request URI is: ${exchange.requestURI} so the hash is $hexHash")
-
+            // TODO Performance: Don't read the entire resource pack for HEAD requests
             val content = this.cache.getFromCache(hexHash)
 
             if (content != null) {
-                exchange.sendResponseHeaders(200, content.size.toLong())
-                exchange.responseBody.write(content)
-                exchange.responseBody.flush()
-                println("Sent resource pack")
+                if (exchange.requestMethod.lowercase() == "head") {
+                    exchange.sendResponseHeaders(200, -1)
+                } else {
+                    exchange.sendResponseHeaders(200, content.size.toLong())
+                    exchange.responseBody.write(content)
+                    exchange.responseBody.flush()
+                }
             } else {
                 exchange.sendResponseHeaders(404, -1)
-                println("Can't find resource pack")
             }
 
             exchange.responseBody.close()

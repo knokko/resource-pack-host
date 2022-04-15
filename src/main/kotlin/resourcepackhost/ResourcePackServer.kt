@@ -7,18 +7,18 @@ import java.net.InetSocketAddress
 
 class ResourcePackServer(
     val port: Int,
+    val backlog: Int,
     folder: File
 ) {
 
     private val cache = ResourcePackCache(folder)
 
     init {
-        println("Preparing resource pack server at port $port and folder $folder")
+        println("Preparing resource pack server at port $port with backlog $backlog and folder $folder")
     }
 
     fun start() {
-        // TODO Make the backlog configurable
-        val httpServer = HttpServer.create(InetSocketAddress(port), 0)
+        val httpServer = HttpServer.create(InetSocketAddress(port), backlog)
         println("And the hostname is ${httpServer.address.hostName}")
 
         httpServer.createContext("/", GetUploadFormHandler())
@@ -30,17 +30,37 @@ class ResourcePackServer(
         var isRunning = true
 
         val cacheThread = Thread {
-            while (isRunning) {
-                cache.update()
-                sleep(60 * 1000)
+            try {
+                while (isRunning) {
+                    cache.update()
+                    sleep(60 * 1000)
+                }
+            } catch (interrupted: InterruptedException) {
+                // When this happens, the cache should stop
             }
+            println("Stopped updating cache")
         }
         cacheThread.start()
 
-        println("The server will stop upon receiving any line in System.in")
-        readLine()
+        println("Available commands:")
+        println(" - stop")
+        println(" - update-cache")
+        println(" - print-expiration-times")
+
+        while (isRunning) {
+            val command = readLine()
+            if (command == "stop") {
+                isRunning = false
+            } else if (command == "update-cache") {
+                cache.update()
+            } else if (command == "print-expiration-times") {
+                cache.printExpirationTimes()
+            } else {
+                println("Unknown command")
+            }
+        }
+
         println("Stopping server...")
-        isRunning = false
         cacheThread.interrupt()
         httpServer.stop(2)
         println("Stopped server")
