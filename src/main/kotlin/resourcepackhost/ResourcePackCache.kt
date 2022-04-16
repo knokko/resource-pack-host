@@ -30,16 +30,17 @@ class ResourcePackCache(private val folder: File) {
 
     init {
         /*
-         * All previous resource packs are assumed to be expired
-         * when this server starts. This is convenient because I
-         * don't know when they should expire. If they are still
-         * used, the resource pack plug-ins will ensure that they
-         * are uploaded again.
+         * Since the expiration times are not saved, we don't know when the existing resource packs should expire. I
+         * think the best to solve this, is by giving each resource pack the default expiration time (so treating them
+         * like they were just requested).
          */
         val existingFiles = folder.listFiles()
         if (existingFiles != null) {
+            val currentTime = currentTimeMillis()
             for (file in existingFiles) {
-                file.delete()
+                if (file.name.endsWith(".zip")) {
+                    expirationTimes[file.name.substring(0 until file.name.length - 4)] = currentTime + CACHE_TIME
+                }
             }
         }
     }
