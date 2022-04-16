@@ -1,1 +1,0 @@
-console.log("Loaded index.js :D");
