@@ -6,17 +6,13 @@ import java.util.zip.ZipException
 import java.util.zip.ZipInputStream
 
 fun extractFileContent(contentPlusHeaders: ByteArray): ByteArray {
-    var contentIndex = 0
+    var contentStartIndex = 0
     var hadLineBreak = false
-    while (contentIndex < contentPlusHeaders.size - 1) {
-        val currentValue = contentPlusHeaders[contentIndex].toInt().toChar()
-        val nextValue = contentPlusHeaders[contentIndex + 1].toInt().toChar()
-        if (currentValue == '\r' || currentValue == '\n') {
-            contentIndex += if ((currentValue == '\n' && nextValue == '\r') || (currentValue == '\r' && nextValue == '\n')) {
-                2
-            } else {
-                1
-            }
+    while (contentStartIndex < contentPlusHeaders.size - 1) {
+        val currentValue = contentPlusHeaders[contentStartIndex].toInt().toChar()
+        val nextValue = contentPlusHeaders[contentStartIndex + 1].toInt().toChar()
+        if (currentValue == '\r' && nextValue == '\n') {
+            contentStartIndex += 2
 
             if (hadLineBreak) {
                 break
@@ -25,11 +21,22 @@ fun extractFileContent(contentPlusHeaders: ByteArray): ByteArray {
             hadLineBreak = true
         } else {
             hadLineBreak = false
-            contentIndex += 1
+            contentStartIndex += 1
         }
     }
 
-    return contentPlusHeaders.sliceArray(contentIndex until contentPlusHeaders.size)
+    var contentBoundIndex = contentPlusHeaders.size - 4
+    while (contentBoundIndex >= contentStartIndex) {
+        val currentValue = contentPlusHeaders[contentBoundIndex].toInt().toChar()
+        val nextValue = contentPlusHeaders[contentBoundIndex + 1].toInt().toChar()
+        if (currentValue == '\r' && nextValue == '\n') {
+            break
+        } else {
+            contentBoundIndex -= 1
+        }
+    }
+
+    return contentPlusHeaders.sliceArray(contentStartIndex until contentBoundIndex)
 }
 
 fun validateResourcePackContent(content: ByteArray): String? {
