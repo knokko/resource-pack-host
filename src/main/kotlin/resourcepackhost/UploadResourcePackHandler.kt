@@ -50,6 +50,13 @@ class UploadResourcePackHandler(
                                     Pair(400, fileError)
                                 }
                             } else {
+
+                                // Browsers don't like it when I don't read the request body, even if I don't use it
+                                val buffer = ByteArray(10_000)
+                                while (true) {
+                                    val numReadBytes = exchange.requestBody.read(buffer)
+                                    if (numReadBytes == -1) break
+                                }
                                 Pair(400, "This file is too large. It can be at most 100 MB.")
                             }
 
