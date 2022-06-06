@@ -49,6 +49,7 @@ class ResourcePackServer(
         println(" - stop")
         println(" - update-cache")
         println(" - print-expiration-times")
+        println(" - memory")
 
         while (isRunning) {
             val command = readLine()
@@ -58,6 +59,15 @@ class ResourcePackServer(
                 cache.update()
             } else if (command == "print-expiration-times") {
                 cache.printExpirationTimes()
+            } else if (command == "memory") {
+                fun formatMemory(value: Long) = String.format("%.3f MB", value.toDouble() / (1024.0 * 1024.0))
+
+                val freeMemory = Runtime.getRuntime().freeMemory()
+                val totalMemory = Runtime.getRuntime().totalMemory()
+                val maxMemory = Runtime.getRuntime().maxMemory()
+
+                println("Claimed memory: ${formatMemory(totalMemory)} / ${formatMemory(maxMemory)}")
+                println("Used memory: ${formatMemory(totalMemory - freeMemory)}")
             } else {
                 println("Unknown command")
             }

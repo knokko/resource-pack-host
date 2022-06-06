@@ -8,12 +8,14 @@ class GetUploadFormHandler(private val threadPoolExecutor: ExecutorService): Htt
     override fun handle(exchange: HttpExchange?) {
         if (exchange != null) {
             threadPoolExecutor.execute {
-                if (exchange.requestURI.toString() == "/" || exchange.requestURI.toString() == "/index.html") {
-                    serveResource(exchange, "index.html", 200)
-                } else {
-                    exchange.sendResponseHeaders(404, -1)
+                performExchange(exchange) {
+                    discardInput(exchange.requestBody)
+                    if (exchange.requestURI.toString() == "/" || exchange.requestURI.toString() == "/index.html") {
+                        serveResource(exchange, "index.html", 200)
+                    } else {
+                        exchange.sendResponseHeaders(404, -1)
+                    }
                 }
-                exchange.responseBody.close()
             }
         }
     }

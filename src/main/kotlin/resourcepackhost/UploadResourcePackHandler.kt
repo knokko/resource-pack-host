@@ -18,65 +18,65 @@ class UploadResourcePackHandler(
         if (exchange != null) {
             threadPool.execute {
 
-                var success = false
-                val contentLengths = exchange.requestHeaders["Content-Length"]
-                if (contentLengths != null && contentLengths.size == 1) {
-                    val rawContentLength = contentLengths[0]
-                    try {
-                        val contentLength = parseInt(rawContentLength)
+                performExchange(exchange) {
 
-                        if (contentLength >= 0) {
+                    var hasValidContentLength = false
+                    val contentLengths = exchange.requestHeaders["Content-Length"]
+                    if (contentLengths != null && contentLengths.size == 1) {
+                        val rawContentLength = contentLengths[0]
+                        try {
+                            val contentLength = parseInt(rawContentLength)
 
-                            success = true
-                            val (responseCode, responseError) = if (contentLength <= FILE_SIZE_LIMIT) {
-                                val content = ByteArray(contentLength)
-                                DataInputStream(exchange.requestBody).readFully(content)
+                            if (contentLength >= 0) {
 
-                                val fileContent = extractFileContent(content)
-                                val fileError = validateResourcePackContent(fileContent)
+                                val (responseCode, responseError) = if (contentLength <= FILE_SIZE_LIMIT) {
+                                    val content = ByteArray(contentLength)
+                                    hasValidContentLength = true
+                                    DataInputStream(exchange.requestBody).readFully(content)
 
-                                if (fileError == null) {
-                                    try {
-                                        val hexHash = this.cache.putInCache(fileContent)
-                                        serveResource(exchange, "upload-success.html", 200) { originalLine ->
-                                            originalLine.replace("%RESOURCE_PACK_ID%", hexHash)
+                                    val fileContent = extractFileContent(content)
+                                    val fileError = validateResourcePackContent(fileContent)
+
+                                    if (fileError == null) {
+                                        try {
+                                            val hexHash = this.cache.putInCache(fileContent)
+                                            serveResource(exchange, "upload-success.html", 200) { originalLine ->
+                                                originalLine.replace("%RESOURCE_PACK_ID%", hexHash)
+                                            }
+
+                                            Pair(200, null)
+                                        } catch (writeFailed: IOException) {
+                                            Pair(500, "An IO error occurred on the server.")
                                         }
-
-                                        Pair(200, null)
-                                    } catch (writeFailed: IOException) {
-                                        Pair(500, "An IO error occurred on the server.")
+                                    } else {
+                                        Pair(400, fileError)
                                     }
                                 } else {
-                                    Pair(400, fileError)
-                                }
-                            } else {
+                                    hasValidContentLength = true
 
-                                // Browsers don't like it when I don't read the request body, even if I don't use it
-                                val buffer = ByteArray(10_000)
-                                while (true) {
-                                    val numReadBytes = exchange.requestBody.read(buffer)
-                                    if (numReadBytes == -1) break
+                                    // Browsers don't like it when I don't read the request body, even if I don't use it
+                                    discardInput(exchange.requestBody)
+                                    Pair(400, "This file is too large. It can be at most 100 MB.")
                                 }
-                                Pair(400, "This file is too large. It can be at most 100 MB.")
-                            }
 
-                            if (responseError != null) {
-                                serveResource(exchange, "upload-error.html", responseCode) { originalLine ->
-                                    originalLine.replace("%ERROR%", responseError)
+                                if (responseError != null) {
+                                    serveResource(exchange, "upload-error.html", responseCode) { originalLine ->
+                                        originalLine.replace("%ERROR%", responseError)
+                                    }
                                 }
                             }
-                            exchange.responseBody.close()
+                        } catch (badContentLength: NumberFormatException) {
+                            // hasValidContentLength will remain false
+                        } catch (badContent: IOException) {
+                            // In this case, the request body could not be read for some reason.
+                            // I don't think much can be done to handle this error
                         }
-                    } catch (badContentLength: NumberFormatException) {
-                        // success will remain false
-                    } catch (badContent: IOException) {
-                        // success will remain false
                     }
-                }
 
-                if (!success) {
-                    exchange.sendResponseHeaders(400, -1)
-                    exchange.responseBody.close()
+                    if (!hasValidContentLength) {
+                        discardInput(exchange.requestBody)
+                        exchange.sendResponseHeaders(400, -1)
+                    }
                 }
             }
         }

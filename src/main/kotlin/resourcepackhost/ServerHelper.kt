@@ -2,8 +2,29 @@ package resourcepackhost
 
 import com.sun.net.httpserver.HttpExchange
 import java.io.ByteArrayOutputStream
+import java.io.IOException
+import java.io.InputStream
 import java.io.PrintStream
 import java.util.*
+
+fun performExchange(exchange: HttpExchange, handler: (HttpExchange) -> Unit) {
+    try {
+        handler(exchange)
+    } catch (ioTrouble: IOException) {
+        println("An IOException was thrown: ${ioTrouble.message}")
+    } finally {
+        exchange.close()
+        System.gc()
+    }
+}
+
+fun discardInput(input: InputStream) {
+    val discardBuffer = ByteArray(10_000)
+    while (input.read(discardBuffer) != -1) {
+        // This loop doesn't need a body
+    }
+    input.close()
+}
 
 fun serveResource(exchange: HttpExchange, path: String, responseCode: Int) {
     val bufferSize = 2_000
