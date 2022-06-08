@@ -5,6 +5,9 @@ import java.io.IOException
 import java.lang.Integer.parseInt
 
 fun main(args: Array<String>) {
+
+    fixMemoryLeak()
+
     var port = -1
     var backlog = -1
     var folderPath = ""
@@ -66,4 +69,17 @@ fun main(args: Array<String>) {
     }
 
     ResourcePackServer(port, backlog, folder).start()
+}
+
+fun fixMemoryLeak() {
+    // By default, HttpServer will keep stuck connections in memory indefinitely, which causes the memory usage to
+    // pile up until it runs out of memory. By overriding this, stuck connections will be aborted after 60 seconds.
+    // See https://github.com/nextgenhealthcare/connect/issues/4657
+    if (System.getProperty("sun.net.httpserver.maxReqTime") == null) {
+        System.setProperty("sun.net.httpserver.maxReqTime", "60");
+    }
+
+    if (System.getProperty("sun.net.httpserver.maxRspTime") == null) {
+        System.setProperty("sun.net.httpserver.maxRspTime", "60");
+    }
 }
