@@ -6,7 +6,7 @@ import java.lang.Integer.parseInt
 
 fun main(args: Array<String>) {
 
-    fixMemoryLeak()
+    fixMemoryLeaks()
 
     var port = -1
     var backlog = -1
@@ -71,7 +71,7 @@ fun main(args: Array<String>) {
     ResourcePackServer(port, backlog, folder).start()
 }
 
-fun fixMemoryLeak() {
+fun fixMemoryLeaks() {
     // By default, HttpServer will keep stuck connections in memory indefinitely, which causes the memory usage to
     // pile up until it runs out of memory. By overriding this, stuck connections will be aborted after 60 seconds.
     // See https://github.com/nextgenhealthcare/connect/issues/4657
@@ -81,5 +81,11 @@ fun fixMemoryLeak() {
 
     if (System.getProperty("sun.net.httpserver.maxRspTime") == null) {
         System.setProperty("sun.net.httpserver.maxRspTime", "60");
+    }
+
+    // By default, all threads will have an NIO buffer cache that can hold up to 250MB of memory. If we have a lot of
+    // threads, this is basically a massive memory leak. By limiting this to 50KB, it becomes barely noticeable.
+    if (System.getProperty("jdk.nio.maxCachedBufferSize") == null) {
+        System.setProperty("jdk.nio.maxCachedBufferSize", "50000");
     }
 }
