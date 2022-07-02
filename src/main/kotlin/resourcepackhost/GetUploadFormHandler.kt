@@ -2,19 +2,16 @@ package resourcepackhost
 
 import com.sun.net.httpserver.HttpExchange
 import com.sun.net.httpserver.HttpHandler
-import java.util.concurrent.ExecutorService
 
-class GetUploadFormHandler(private val threadPoolExecutor: ExecutorService): HttpHandler {
+class GetUploadFormHandler: HttpHandler {
     override fun handle(exchange: HttpExchange?) {
         if (exchange != null) {
-            threadPoolExecutor.execute {
-                performExchange(exchange) {
-                    discardInput(exchange.requestBody)
-                    if (exchange.requestURI.toString() == "/" || exchange.requestURI.toString() == "/index.html") {
-                        serveResource(exchange, "index.html", 200)
-                    } else {
-                        exchange.sendResponseHeaders(404, -1)
-                    }
+            performExchange(exchange) {
+                discardInput(exchange.requestBody)
+                if (exchange.requestURI.toString() == "/" || exchange.requestURI.toString() == "/index.html") {
+                    serveResource(exchange, "index.html", 200)
+                } else {
+                    exchange.sendResponseHeaders(404, -1)
                 }
             }
         }

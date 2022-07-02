@@ -12,6 +12,9 @@ fun performExchange(exchange: HttpExchange, handler: (HttpExchange) -> Unit) {
         handler(exchange)
     } catch (ioTrouble: IOException) {
         println("An IOException was thrown: ${ioTrouble.message}")
+    } catch (unexpected: Throwable) {
+        println("An unexpected error occurred:")
+        unexpected.printStackTrace()
     } finally {
         exchange.close()
         System.gc()

@@ -23,10 +23,11 @@ class ResourcePackServer(
     fun start() {
         val httpServer = HttpServer.create(InetSocketAddress(port), backlog)
         println("And the hostname is ${httpServer.address.hostName}")
+        httpServer.executor = this.threadPool
 
-        httpServer.createContext("/", GetUploadFormHandler(this.threadPool))
-        httpServer.createContext(GET_RESOURCE_PACK_PREFIX, GetResourcePackHandler(this.cache, this.threadPool))
-        httpServer.createContext("/upload-resource-pack/", UploadResourcePackHandler(this.cache, this.threadPool))
+        httpServer.createContext("/", GetUploadFormHandler())
+        httpServer.createContext(GET_RESOURCE_PACK_PREFIX, GetResourcePackHandler(this.cache))
+        httpServer.createContext("/upload-resource-pack/", UploadResourcePackHandler(this.cache))
 
         httpServer.start()
 
