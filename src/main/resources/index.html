@@ -19,6 +19,13 @@
 
                 form.onsubmit = event => {
                     event.preventDefault();
+
+                    // Checking file size before uploading avoids unneeded network load
+                    if (fileInput.files.length > 0 && fileInput.files[0].size > 100 * 1024 * 1024) {
+                        document.getElementById('upload-progress').innerText = 'This file is too large. It can be at most 100MB';
+                        return;
+                    }
+
                     const fileValue = fileInput.value;
 
                     const xhr = new XMLHttpRequest();
