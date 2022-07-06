@@ -76,16 +76,16 @@ fun fixMemoryLeaks() {
     // pile up until it runs out of memory. By overriding this, stuck connections will be aborted after 600 seconds.
     // See https://github.com/nextgenhealthcare/connect/issues/4657
     if (System.getProperty("sun.net.httpserver.maxReqTime") == null) {
-        System.setProperty("sun.net.httpserver.maxReqTime", "600");
+        System.setProperty("sun.net.httpserver.maxReqTime", "600")
     }
 
     if (System.getProperty("sun.net.httpserver.maxRspTime") == null) {
-        System.setProperty("sun.net.httpserver.maxRspTime", "600");
+        System.setProperty("sun.net.httpserver.maxRspTime", "600")
     }
 
     // By default, all threads will have an NIO buffer cache that can hold up to 250MB of memory. If we have a lot of
     // threads, this is basically a massive memory leak. By limiting this to 50KB, it becomes barely noticeable.
     if (System.getProperty("jdk.nio.maxCachedBufferSize") == null) {
-        System.setProperty("jdk.nio.maxCachedBufferSize", "50000");
+        System.setProperty("jdk.nio.maxCachedBufferSize", "50000")
     }
 }
