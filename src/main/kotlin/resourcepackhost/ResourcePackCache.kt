@@ -2,15 +2,15 @@ package resourcepackhost
 
 import java.io.File
 import java.io.IOException
-import java.lang.System.currentTimeMillis
+import java.lang.System.nanoTime
 import java.nio.file.Files
 import java.security.MessageDigest
 import java.util.concurrent.ConcurrentHashMap
 
-/*
+/**
  * To prevent old resource packs from consuming my disk space, I
  * delete every resource pack that has not been refreshed for at
- * least an hour.
+ * least an hour (= 10^9 * 60 * 60 nanoseconds).
  *
  * The plug-in is programmed to send periodic refresh messages
  * while the server is running. This should ensure that no
@@ -22,7 +22,7 @@ import java.util.concurrent.ConcurrentHashMap
  * ensures that the plug-in can always upload the resource pack
  * again.
  */
-private const val CACHE_TIME = 1000L * 60L * 60L
+private const val CACHE_TIME = 1_000_000_000L * 60L * 60L
 
 class ResourcePackCache(private val folder: File) {
 
@@ -36,7 +36,7 @@ class ResourcePackCache(private val folder: File) {
          */
         val existingFiles = folder.listFiles()
         if (existingFiles != null) {
-            val currentTime = currentTimeMillis()
+            val currentTime = nanoTime()
             for (file in existingFiles) {
                 if (file.name.endsWith(".zip")) {
                     expirationTimes[file.name.substring(0 until file.name.length - 4)] = currentTime + CACHE_TIME
@@ -48,7 +48,7 @@ class ResourcePackCache(private val folder: File) {
     private fun getFile(hexHash: String) = File(folder.path + "/" + hexHash + ".zip")
 
     fun update() {
-        val currentTime = currentTimeMillis()
+        val currentTime = nanoTime()
         val deletedFiles = mutableListOf<String>()
         for ((hexString, expirationTime) in expirationTimes) {
             if (currentTime > expirationTime) {
@@ -63,13 +63,13 @@ class ResourcePackCache(private val folder: File) {
     }
 
     fun printExpirationTimes() {
-        val currentTime = currentTimeMillis()
+        val currentTime = nanoTime()
         for ((hexString, expirationTime) in expirationTimes) {
             val timeLeft = expirationTime - currentTime
             if (timeLeft < 0) {
                 println("$hexString will be removed during the next cache update")
             } else {
-                val secondsLeft = timeLeft / 1000
+                val secondsLeft = timeLeft / 1_000_000_000L
                 println("$hexString has ${secondsLeft / 60} minutes and ${secondsLeft % 60} seconds left")
             }
         }
@@ -86,7 +86,7 @@ class ResourcePackCache(private val folder: File) {
         if (!file.exists()) {
             Files.write(file.toPath(), fileContent)
         }
-        this.expirationTimes[hexHash] = currentTimeMillis() + CACHE_TIME
+        this.expirationTimes[hexHash] = nanoTime() + CACHE_TIME
 
         return hexHash
     }
@@ -96,7 +96,7 @@ class ResourcePackCache(private val folder: File) {
             val file = File(folder.path + "/" + hexHash + ".zip")
             try {
                 val fileContent = Files.readAllBytes(file.toPath())
-                this.expirationTimes[hexHash] = currentTimeMillis() + CACHE_TIME
+                this.expirationTimes[hexHash] = nanoTime() + CACHE_TIME
                 fileContent
             } catch (ioTrouble: IOException) {
                 this.expirationTimes.remove(hexHash)
