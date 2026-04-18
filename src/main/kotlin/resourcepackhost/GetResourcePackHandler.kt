@@ -17,6 +17,7 @@ class GetResourcePackHandler(private val cache: ResourcePackCache): HttpHandler 
                 val content = this.cache.getFromCache(hexHash)
 
                 if (content != null) {
+                    exchange.responseHeaders.add("Access-Control-Allow-Origin", "*")
                     if (exchange.requestMethod.lowercase() == "head") {
                         exchange.sendResponseHeaders(200, -1)
                     } else {
