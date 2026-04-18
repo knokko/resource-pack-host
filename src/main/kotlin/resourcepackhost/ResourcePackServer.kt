@@ -27,6 +27,7 @@ class ResourcePackServer(
         httpServer.createContext("/", GetUploadFormHandler())
         httpServer.createContext(GET_RESOURCE_PACK_PREFIX, GetResourcePackHandler(this.cache))
         httpServer.createContext("/upload-resource-pack/", UploadResourcePackHandler(this.cache))
+        httpServer.createContext(ACME_CHALLENGE_PREFIX, AcmeChallengeHandler())
 
         httpServer.start()
 
